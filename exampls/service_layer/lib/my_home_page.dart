@@ -1,41 +1,24 @@
+import 'package:exapp/my_home_page_bloc.dart';
+import 'package:exapp/services/repository.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rxdart/rxdart.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: Provider<MyHomePageBloc>(
-          create: (context) => MyHomePageBloc(),
-          dispose: (context, value) => value.dispose(),
-          child: const MyHomePage(title: 'Flutter Demo Home Page')),
-    );
-  }
-}
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
+
   final String title;
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
   late final MyHomePageBloc bloc;
+
   @override
   void initState() {
     bloc = context.read<MyHomePageBloc>();
+    bloc.loadDatas();
     super.initState();
   }
 
@@ -58,6 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 class BodyWidget extends StatelessWidget {
   const BodyWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<MyHomePageBloc>();
@@ -71,25 +55,28 @@ class BodyWidget extends StatelessWidget {
           StreamBuilder<int>(
               stream: bloc.counterStream,
               builder: (context, snapshot) {
-                return Text(
-                  '${snapshot.data ?? 0}',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                return Column(
+                  children: [
+                    Text(
+                      '${snapshot.data ?? 0}',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    StreamBuilder<List<DataModel>>(
+                        stream: bloc.modelsStream,
+                        builder: (context, snapshot) {
+                          final models = snapshot.data ?? [];
+                          return Column(
+                              children: models
+                                  .map((e) => ListTile(
+                                        title: Text(e.title),
+                                      ))
+                                  .toList());
+                        })
+                  ],
                 );
               }),
         ],
       ),
     );
-  }
-}
-
-class MyHomePageBloc {
-  final BehaviorSubject<int> _counter = BehaviorSubject<int>.seeded(0);
-  Stream<int> get counterStream => _counter.stream;
-  void incrementCounter() {
-    _counter.add(_counter.value + 1);
-  }
-
-  dispose() {
-    _counter.close();
   }
 }
